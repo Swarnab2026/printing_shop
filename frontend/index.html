@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jamunbala Store - Live Stock</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .admin-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .admin-btn:hover {
+            background: #5568d3;
+        }
+
+        .refresh-info {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+
+        .stock-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stock-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stock-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .item-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .stock-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .stock-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .stock-quantity {
+            font-size: 1.8em;
+            font-weight: bold;
+            padding: 8px 16px;
+            border-radius: 8px;
+        }
+
+        .in-stock {
+            color: #10b981;
+            background: #d1fae5;
+        }
+
+        .low-stock {
+            color: #f59e0b;
+            background: #fef3c7;
+        }
+
+        .out-of-stock {
+            color: #ef4444;
+            background: #fee2e2;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            padding: 40px;
+        }
+
+        .no-items {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .admin-btn {
+                position: static;
+                display: inline-block;
+                margin-top: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="admin.html" class="admin-btn">Admin Login</a>
+        
+        <header>
+            <h1>🖨️ Jamunbala Store</h1>
+            <p class="subtitle">Printing Related Items - Live Stock Updates</p>
+        </header>
+
+        <div class="refresh-info">
+            📡 Live updates every 5 seconds | Last updated: <span id="lastUpdate">-</span>
+        </div>
+
+        <div id="stockContainer">
+            <div class="loading">Loading stock data...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+        let stockContainer = document.getElementById('stockContainer');
+        let lastUpdateElement = document.getElementById('lastUpdate');
+
+        async function fetchStock() {
+            try {
+                const response = await fetch(`${API_URL}/api/stock`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayStock(data.items);
+                    updateLastUpdateTime();
+                }
+            } catch (error) {
+                console.error('Error fetching stock:', error);
+                stockContainer.innerHTML = '<div class="no-items">Unable to connect to server. Please check if the server is running.</div>';
+            }
+        }
+
+        function displayStock(items) {
+            if (items.length === 0) {
+                stockContainer.innerHTML = '<div class="no-items">No items in stock yet. Check back soon!</div>';
+                return;
+            }
+
+            stockContainer.innerHTML = '<div class="stock-grid">' + 
+                items.map(item => {
+                    let stockClass = 'in-stock';
+                    if (item.quantity === 0) {
+                        stockClass = 'out-of-stock';
+                    } else if (item.quantity <= 10) {
+                        stockClass = 'low-stock';
+                    }
+
+                    return `
+                        <div class="stock-card">
+                            <div class="item-name">${item.name}</div>
+                            <div class="stock-info">
+                                <span class="stock-label">Available Quantity:</span>
+                                <span class="stock-quantity ${stockClass}">${item.quantity}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('') + 
+            '</div>';
+        }
+
+        function updateLastUpdateTime() {
+            const now = new Date();
+            lastUpdateElement.textContent = now.toLocaleTimeString();
+        }
+
+        // Initial fetch
+        fetchStock();
+
+        // Auto-refresh every 5 seconds
+        setInterval(fetchStock, 5000);
+    </script>
+</body>
+</html>
